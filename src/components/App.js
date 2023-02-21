@@ -38,9 +38,9 @@ function App() {
 
   React.useEffect(() => {
     tokenCheck();
-  }, [loggedIn]);
+  }, []);
 
-  React.useEffect(() => {
+  /*React.useEffect(() => {
     api
       .getUserInfo()
       .then((userData) => {
@@ -55,6 +55,17 @@ function App() {
     api
       .getInitialCards()
       .then((initialCards) => {
+        setCards(initialCards);
+      })
+      .catch((err) => {
+        console.log(`Ошибка: ${err}`);
+      });
+  }, []);*/
+
+  React.useEffect(() => {
+    Promise.all([api.getUserInfo(), api.getInitialCards()])
+      .then(([userData, initialCards]) => {
+        setCurrentUser(userData);
         setCards(initialCards);
       })
       .catch((err) => {
@@ -166,13 +177,9 @@ function App() {
       auth.getContent(jwt).then((res) => {
         console.log(res.email);
         if (res) {
-          const userData = {
-            email: res.data.email,
-          };
           // авторизуем пользователя
           setLoggedIn(true);
-          //setUserData(userData);
-          setUserEmail(userData.email);
+          setUserEmail(res.data.email);
           navigate("/", { replace: true });
         }
       });
@@ -186,6 +193,7 @@ function App() {
         if (res) {
           setIsSucces(true);
           setIsInfoToolTipOpen(true);
+          navigate("/sign-in", { replace: true });
         }
       })
       .catch(() => {
@@ -195,16 +203,13 @@ function App() {
   }
 
   function handleLogin(email, password) {
-    // setLoggedIn(true);
     auth
       .authorize(email, password)
       .then((data) => {
-        console.log();
         if (data.token) {
-          //setFormValue({ email: "", password: "" });
           localStorage.setItem("jwt", data.token);
-          //handleLogin();
           setLoggedIn(true);
+          setUserEmail(email);
           navigate("/", { replace: true });
         }
       })
@@ -213,15 +218,15 @@ function App() {
         setIsInfoToolTipOpen(true);
       });
   }
-  //const history = useHistory();
+
   function handleLogout() {
     localStorage.removeItem("jwt");
     setLoggedIn(false);
-    //history.push("/sign-in");
   }
+
   return (
     <CurrentUserContext.Provider value={currentUser}>
-      <div className="page">
+      <>
         <Header loggedIn={loggedIn} email={userEmail} onLogout={handleLogout} />
         <Routes>
           <Route
@@ -274,7 +279,7 @@ function App() {
           onClose={closeAllPopups}
           isSucces={isSucces}
         />
-      </div>
+      </>
     </CurrentUserContext.Provider>
   );
 }
